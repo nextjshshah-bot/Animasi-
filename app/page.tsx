@@ -36,22 +36,36 @@ export default function Home() {
   const generatedPrompt = useMemo(() => prompt || `You are a senior motion designer. Create a SINGLE self-contained HTML file using Three.js or CSS animations for the following concept: ${concept}. Aspect Ratio: ${ratio}. Duration: ${duration}. Background: ${background}. Ensure it is highly detailed, renders beautifully, and loops seamlessly.`, [prompt, concept, ratio, duration, background]);
 
   const createPrompt = () => setPrompt(`You are a senior motion designer. Create a SINGLE self-contained HTML file using Three.js or CSS animations for the following concept: ${concept || 'an abstract motion graphic'}. Aspect Ratio: ${ratio}. Duration: ${duration}. Background: ${background}. Ensure it is highly detailed, renders beautifully, and loops seamlessly.`);
-  const copyPrompt = async () => { await navigator.clipboard?.writeText(generatedPrompt); setCopied(true); setTimeout(() => setCopied(false), 1800); };
+  const copyPrompt = async () => {
+    try {
+      if (navigator.clipboard) await navigator.clipboard.writeText(generatedPrompt);
+      else { const helper = document.createElement('textarea'); helper.value = generatedPrompt; document.body.appendChild(helper); helper.select(); document.execCommand('copy'); helper.remove(); }
+      setCopied(true); setTimeout(() => setCopied(false), 1800);
+    } catch { setCopied(false); }
+  };
   const runMotion = () => { setPreviewCode(code || defaults); document.getElementById('preview')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 
   const exportVideo = async () => {
     if (isExporting) return;
+    if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
+      setExportMessage('Video export is not supported in this browser. Try Chrome, Edge, or Firefox.');
+      return;
+    }
     setIsExporting(true); setProgress(0); setExportMessage('Preparing render context…');
     const seconds = Number.parseInt(duration, 10) || 10;
     const canvas = document.createElement('canvas');
     const isPortrait = ratio === '9:16';
     const isSquare = ratio === '1:1';
-    canvas.width = resolution === '4K' ? (isPortrait ? 2160 : 3840) : (isPortrait ? 1080 : 1920);
-    canvas.height = resolution === '4K' ? (isPortrait ? 3840 : isSquare ? 3840 : 2160) : (isPortrait ? 1920 : isSquare ? 1080 : 1080);
+    const longEdge = resolution === '4K' ? 3840 : 1920;
+    const shortEdge = resolution === '4K' ? 2160 : 1080;
+    canvas.width = isPortrait ? shortEdge : longEdge;
+    canvas.height = isPortrait ? longEdge : isSquare ? longEdge : shortEdge;
+    if (isSquare) { canvas.width = longEdge; canvas.height = longEdge; }
     const ctx = canvas.getContext('2d');
     if (!ctx) { setIsExporting(false); return; }
     const stream = canvas.captureStream(Number(fps));
-    const mime = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1') ? 'video/mp4;codecs=avc1' : 'video/webm;codecs=vp9';
+    const mime = ['video/mp4;codecs=avc1', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type));
+    if (!mime) { stream.getTracks().forEach(track => track.stop()); setIsExporting(false); setExportMessage('This browser cannot encode a supported video format.'); return; }
     const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: resolution === '4K' ? 24000000 : 10000000 });
     const chunks: Blob[] = [];
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
