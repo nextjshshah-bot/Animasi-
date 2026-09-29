@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --ink: #f5f7fa; --muted: #8b96a8; --line: #242b38; --panel: #11151d; --bg: #090b10; --accent: #a7f34d; }
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, Helvetica, sans-serif; }
+button, textarea, input, select { font: inherit; }
+button { cursor: pointer; }
+::selection { background: #b9ff68; color: #111; }
+.grid-bg { background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 32px 32px; }
+.noise { position: relative; }
+.noise:after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .035; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E"); }
+textarea:focus, select:focus, input:focus { outline: 2px solid rgba(167,243,77,.55); outline-offset: 1px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 1s linear infinite; }
